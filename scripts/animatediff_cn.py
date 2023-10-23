@@ -63,8 +63,7 @@ class AnimateDiffControl:
             from scripts import external_code
             from scripts.batch_hijack import InputMode
 
-            units = external_code.get_all_units_in_processing(p)
-            units = [unit for unit in units if getattr(unit, 'enabled', False)]
+            units = cn_script.get_enabled_units(p)
 
             if len(units) > 0:
                 global_input_frames = get_input_frames()
@@ -211,7 +210,7 @@ class AnimateDiffControl:
             clear_all_lllite()
             clear_all_ip_adapter()
 
-            self.enabled_units = cn_script.get_enabled_units(p)
+            self.enabled_units = self.get_enabled_units(p)
 
             if len(self.enabled_units) == 0:
                 self.latest_network = None
