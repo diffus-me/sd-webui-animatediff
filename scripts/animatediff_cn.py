@@ -148,7 +148,7 @@ class AnimateDiffControl:
             from scripts.controlmodel_ipadapter import (PlugableIPAdapter,
                                                         clear_all_ip_adapter)
             from scripts.hook import ControlModelType, ControlParams, UnetHook
-            from scripts.logging import logger
+            from scripts.cn_logging import logger
             from scripts.processor import model_free_preprocessors
 
             # TODO: i2i-batch mode, what should I change?
