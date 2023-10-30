@@ -62,6 +62,7 @@ class AnimateDiffScript(scripts.Script):
                 "extensions.animatediff",
                 decoded_params=decoded_params,
                 refund_if_failed=True,
+                only_available_for=["plus", "pro", "api"],
             ):
                 motion_module.inject(p.sd_model, params.model)
                 self.prompt_scheduler = AnimateDiffPromptSchedule()
