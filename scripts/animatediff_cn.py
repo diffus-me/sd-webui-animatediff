@@ -164,6 +164,7 @@ class AnimateDiffControl:
                 "extensions.animatediff.controlnet",
                 decoded_params=decoded_params,
                 refund_if_failed=True,
+                only_available_for=["plus", "pro", "api"],
             ):
                 return _hacked_main_entry(self, p)
 
