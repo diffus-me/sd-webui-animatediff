@@ -5,6 +5,7 @@ import torch
 from einops import rearrange
 from modules import hashes, shared, sd_models, devices
 from modules.devices import cpu, device, torch_gc
+from modules.paths import models_path
 
 from motion_module import MotionWrapper, MotionModuleType
 from scripts.animatediff_logger import logger_animatediff as logger
@@ -25,6 +26,7 @@ class AnimateDiffMM:
 
 
     def get_model_dir(self):
+        return os.path.join(models_path, "animatediff")
         model_dir = shared.opts.data.get("animatediff_model_path", os.path.join(self.script_dir, "model"))
         if not model_dir:
             model_dir = os.path.join(self.script_dir, "model")
