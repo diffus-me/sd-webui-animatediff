@@ -313,7 +313,7 @@ class AnimateDiffUiGroup:
                 remove = gr.Button(value="Remove motion module from any memory")
                 unload.click(fn=motion_module.unload)
                 remove.click(fn=motion_module.remove)
-        return self.register_unit(is_img2img)
+        return self.params.get_list(is_img2img)
 
 
     def register_unit(self, is_img2img: bool):
