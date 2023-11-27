@@ -137,6 +137,9 @@ class AnimateDiffUiGroup:
     txt2img_submit_button = None
     img2img_submit_button = None
 
+    txt2img_batch_size = None
+    img2img_batch_size = None
+
     def __init__(self):
         self.params = AnimateDiffProcess()
 
@@ -185,7 +188,7 @@ class AnimateDiffUiGroup:
             with gr.Row():
                 self.params.enable = gr.Checkbox(
                     value=self.params.enable, label="Enable AnimateDiff", 
-                    elem_id=f"{elemid_prefix}enable"
+                    elem_id=f"{elemid_prefix}enable",
                 )
                 self.params.video_length = gr.Number(
                     minimum=self.params.batch_size,
@@ -221,15 +224,9 @@ class AnimateDiffUiGroup:
                     precision=0,
                     elem_id=f"{elemid_prefix}batch-size",
                 )
-                def _update_video_length_minimum(batch_size: int, video_length: int):
-                    if video_length < batch_size:
-                        return gr.update(minimum=batch_size, value=batch_size)
-                    return gr.update(minimum=batch_size)
-                self.params.batch_size.change(
-                    _update_video_length_minimum,
-                    inputs=[self.params.batch_size, self.params.video_length],
-                    outputs=self.params.video_length,
-                )
+
+                webui_batch_size = self._hack_batch_size(is_img2img)
+
                 self.params.stride = gr.Number(
                     minimum=1,
                     value=self.params.stride,
@@ -324,7 +321,10 @@ class AnimateDiffUiGroup:
                 remove = gr.Button(value="Remove motion module from any memory")
                 unload.click(fn=motion_module.unload)
                 remove.click(fn=motion_module.remove)
-        return self.params.get_list(is_img2img)
+
+        params_list = self.params.get_list(is_img2img)
+        params_list[2] = webui_batch_size
+        return params_list
 
 
     def register_unit(self, is_img2img: bool):
@@ -342,6 +342,56 @@ class AnimateDiffUiGroup:
         return unit
 
 
+    def _hack_batch_size(self, is_img2img: bool):
+        webui_batch_size = (
+            AnimateDiffUiGroup.img2img_batch_size
+            if is_img2img
+            else AnimateDiffUiGroup.txt2img_batch_size
+        )
+
+        self.params.batch_size.change(
+            None,
+            _js=(
+                "(batch_size, video_length) => video_length < batch_size"
+                "? {minimum: batch_size, value: batch_size, __type__: 'update'}"
+                ": {minimum: batch_size, __type__: 'update'}"
+            ),
+            inputs=[self.params.batch_size, self.params.video_length],
+            outputs=self.params.video_length,
+        )
+
+        self.params.enable.change(
+            None,
+            _js=(
+                "(enable, video_length) => enable"
+                "? {value: video_length, mode: 'static', maximum: video_length, __type__: 'update'}"
+                ": {value: 4, mode: 'dynamic', maximum: 4, __type__: 'update'}"
+            ),
+            inputs=[self.params.enable, self.params.video_length],
+            outputs=webui_batch_size,
+        )
+        tab_name = "img2img" if is_img2img else "txt2img"
+        self.params.enable.change(
+            None,
+            _js=f"monitorThisParam('tab_{tab_name}', 'modules.{tab_name}.{tab_name}', 'enable_animatediff')",
+            inputs=[],
+            outputs=[self.params.enable],
+        )
+
+        self.params.video_length.change(
+            None,
+            _js=(
+                "(enable, video_length) => enable"
+                "? {value: video_length, mode: 'static', maximum: video_length, __type__: 'update'}"
+                ": {__type__: 'update'}"
+            ),
+            inputs=[self.params.enable, self.params.video_length],
+            outputs=webui_batch_size,
+        )
+
+        return webui_batch_size
+
+
     @staticmethod
     def on_after_component(component, **_kwargs):
         elem_id = getattr(component, "elem_id", None)
@@ -352,6 +402,14 @@ class AnimateDiffUiGroup:
 
         if elem_id == "img2img_generate":
             AnimateDiffUiGroup.img2img_submit_button = component
+            return
+
+        if elem_id == "txt2img_batch_size":
+            AnimateDiffUiGroup.txt2img_batch_size = component
+            return
+
+        if elem_id == "img2img_batch_size":
+            AnimateDiffUiGroup.img2img_batch_size = component
             return
 
 

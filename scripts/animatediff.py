@@ -3,8 +3,9 @@ from modules import script_callbacks, scripts, shared
 from modules.processing import (Processed, StableDiffusionProcessing,
                                 StableDiffusionProcessingImg2Img)
 from modules.scripts import PostprocessBatchListArgs, PostprocessImageArgs
+from modules.system_monitor import monitor_call_context
 
-from scripts.animatediff_cn import AnimateDiffControl
+from scripts.animatediff_cn import AnimateDiffControl, build_decoded_params_from_processing
 from scripts.animatediff_infv2v import AnimateDiffInfV2V
 from scripts.animatediff_latent import AnimateDiffI2VLatent
 from scripts.animatediff_logger import logger_animatediff as logger
@@ -47,16 +48,25 @@ class AnimateDiffScript(scripts.Script):
         if params.enable:
             logger.info("AnimateDiff process start.")
             params.set_p(p)
-            motion_module.inject(p.sd_model, params.model)
-            self.prompt_scheduler = AnimateDiffPromptSchedule()
-            self.lora_hacker = AnimateDiffLora(motion_module.mm.is_v2)
-            self.lora_hacker.hack()
-            self.cfg_hacker = AnimateDiffInfV2V(p, self.prompt_scheduler)
-            self.cfg_hacker.hack(params)
-            self.cn_hacker = AnimateDiffControl(p, self.prompt_scheduler)
-            self.cn_hacker.hack(params)
-            update_infotext(p, params)
-            self.hacked = True
+            decoded_params = build_decoded_params_from_processing(p)
+            with monitor_call_context(
+                p.get_request(),
+                "extensions.animatediff",
+                "extensions.animatediff",
+                decoded_params=decoded_params,
+                refund_if_failed=True,
+            ):
+                motion_module.inject(p.sd_model, params.model)
+                self.prompt_scheduler = AnimateDiffPromptSchedule()
+                self.lora_hacker = AnimateDiffLora(motion_module.mm.is_v2)
+                self.lora_hacker.hack()
+                self.cfg_hacker = AnimateDiffInfV2V(p, self.prompt_scheduler)
+                self.cfg_hacker.hack(params)
+                self.cn_hacker = AnimateDiffControl(p, self.prompt_scheduler)
+                self.cn_hacker.hack(params)
+                update_infotext(p, params)
+                self.hacked = True
+
         elif self.hacked:
             self.cn_hacker.restore()
             self.cfg_hacker.restore()
