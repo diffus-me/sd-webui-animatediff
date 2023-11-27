@@ -75,11 +75,7 @@ class AnimateDiffScript(scripts.Script):
                 self.hacked = True
 
         elif self.hacked:
-            self.cn_hacker.restore()
-            self.cfg_hacker.restore()
-            self.lora_hacker.restore()
-            motion_module.restore(p.sd_model)
-            self.hacked = False
+            self._clean(p)
 
 
     def before_process_batch(self, p: StableDiffusionProcessing, *args, **kwargs):
@@ -104,13 +100,20 @@ class AnimateDiffScript(scripts.Script):
         params = AnimateDiffProcess(*args)
         if params.enable:
             self.prompt_scheduler.save_infotext_txt(res)
+            self._clean(p)
+            AnimateDiffOutput().output(p, res, params)
+            logger.info("AnimateDiff process end.")
+
+    def _clean(self, p: StableDiffusionProcessing):
+        if self.hacked:
             self.cn_hacker.restore()
             self.cfg_hacker.restore()
             self.lora_hacker.restore()
             motion_module.restore(p.sd_model)
             self.hacked = False
-            AnimateDiffOutput().output(p, res, params)
-            logger.info("AnimateDiff process end.")
+
+    def on_fail(self, p: StableDiffusionProcessing, *args):
+        self._clean(p)
 
 
 def on_ui_settings():
