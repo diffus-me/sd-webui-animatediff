@@ -4,6 +4,7 @@ from modules.processing import (Processed, StableDiffusionProcessing,
                                 StableDiffusionProcessingImg2Img)
 from modules.scripts import PostprocessBatchListArgs, PostprocessImageArgs
 from modules.system_monitor import monitor_call_context
+from modules.shared import opts
 
 from scripts.animatediff_cn import AnimateDiffControl, build_decoded_params_from_processing
 from scripts.animatediff_infv2v import AnimateDiffInfV2V
@@ -64,6 +65,8 @@ class AnimateDiffScript(scripts.Script):
                 refund_if_failed=True,
                 only_available_for=["plus", "pro", "api"],
             ):
+                self._origin_pad_cond_uncond = shared.opts.pad_cond_uncond
+                shared.opts.pad_cond_uncond = True
                 motion_module.inject(p.sd_model, params.model)
                 self.prompt_scheduler = AnimateDiffPromptSchedule()
                 self.lora_hacker = AnimateDiffLora(motion_module.mm.is_v2)
@@ -107,6 +110,7 @@ class AnimateDiffScript(scripts.Script):
 
     def _clean(self, p: StableDiffusionProcessing):
         if self.hacked:
+            shared.opts.pad_cond_uncond = self._origin_pad_cond_uncond
             self.cn_hacker.restore()
             self.cfg_hacker.restore()
             self.lora_hacker.restore()
