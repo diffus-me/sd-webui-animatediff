@@ -26,9 +26,9 @@ class AnimateDiffProcess:
 
     def __init__(
         self,
-        model="mm_sd_v15_v2.ckpt",
+        model="mm_sd_v15_v2.safetensors",
         enable=False,
-        video_length=0,
+        video_length=16,
         fps=8,
         loop_number=0,
         closed_loop='R-P',
@@ -175,7 +175,8 @@ class AnimateDiffUiGroup:
                     refresh_model.click(refresh_models, self.params.model, self.params.model)
 
                 self.params.format = gr.CheckboxGroup(
-                    choices=["GIF", "MP4", "WEBP", "WEBM", "PNG", "TXT"],
+                    # choices=["GIF", "MP4", "WEBP", "WEBM", "PNG", "TXT"],
+                    choices=["GIF", "MP4", "WEBP", "WEBM", "PNG"],
                     label="Save format",
                     type="value",
                     elem_id=f"{elemid_prefix}save-format",
@@ -187,7 +188,7 @@ class AnimateDiffUiGroup:
                     elem_id=f"{elemid_prefix}enable"
                 )
                 self.params.video_length = gr.Number(
-                    minimum=0,
+                    minimum=self.params.batch_size,
                     value=self.params.video_length,
                     label="Number of frames",
                     precision=0,
@@ -220,6 +221,15 @@ class AnimateDiffUiGroup:
                     precision=0,
                     elem_id=f"{elemid_prefix}batch-size",
                 )
+                def _update_video_length_minimum(batch_size: int, video_length: int):
+                    if video_length < batch_size:
+                        return gr.update(minimum=batch_size, value=batch_size)
+                    return gr.update(minimum=batch_size)
+                self.params.batch_size.change(
+                    _update_video_length_minimum,
+                    inputs=[self.params.batch_size, self.params.video_length],
+                    outputs=self.params.video_length,
+                )
                 self.params.stride = gr.Number(
                     minimum=1,
                     value=self.params.stride,
@@ -234,7 +244,7 @@ class AnimateDiffUiGroup:
                     precision=0,
                     elem_id=f"{elemid_prefix}overlap",
                 )
-            with gr.Row():
+            with gr.Row(visible=False):
                 self.params.interp = gr.Radio(
                     choices=["Off", "FILM"],
                     label="Frame Interpolation",
@@ -270,7 +280,8 @@ class AnimateDiffUiGroup:
             self.params.video_path = gr.Textbox(
                 value=self.params.video_path,
                 label="Video path",
-                elem_id=f"{elemid_prefix}video-path"
+                elem_id=f"{elemid_prefix}video-path",
+                visible=False,
             )
             if is_img2img:
                 with gr.Row():
@@ -308,7 +319,7 @@ class AnimateDiffUiGroup:
                     label="Optional last frame. Leave it blank if you do not need one.",
                     type="pil",
                 )
-            with gr.Row():
+            with gr.Row(visible=False):
                 unload = gr.Button(value="Move motion module to CPU (default if lowvram)")
                 remove = gr.Button(value="Remove motion module from any memory")
                 unload.click(fn=motion_module.unload)
