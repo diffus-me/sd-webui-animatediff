@@ -35,7 +35,7 @@ class AnimateDiffProcess:
         batch_size=16,
         stride=1,
         overlap=-1,
-        format=["GIF", "PNG"],
+        format=["GIF"],
         interp='Off',
         interp_x=10,
         video_source=None,
