@@ -24,16 +24,6 @@ from scripts.animatediff_infotext import update_infotext
 from scripts.animatediff_i2ibatch import animatediff_i2ibatch
 
 
-def build_decoded_params_from_processing(p: StableDiffusionProcessing) -> dict:
-    return {
-        "width": p.width,
-        "height": p.height,
-        'steps': p.steps,
-        'batch_size': p.batch_size,
-        'n_iter': p.n_iter,
-    }
-
-
 class AnimateDiffControl:
     original_processing_process_images_hijack = None
     original_controlnet_main_entry = None
@@ -155,14 +145,18 @@ class AnimateDiffControl:
             if enabled_units_length == 0:
                 return _hacked_main_entry(self, p)
 
-            decoded_params = build_decoded_params_from_processing(p)
-            decoded_params["controlnet_units"] = enabled_units_length
-
             with monitor_call_context(
                 p.get_request(),
                 "extensions.animatediff.controlnet",
                 "extensions.animatediff.controlnet",
-                decoded_params=decoded_params,
+                decoded_params={
+                    "width": p.width,
+                    "height": p.height,
+                    "steps": p.steps,
+                    "batch_size": p.batch_size,
+                    "n_iter": p.n_iter,
+                    "controlnet_units": enabled_units_length,
+                },
                 refund_if_failed=True,
                 only_available_for=["plus", "pro", "api"],
             ):
