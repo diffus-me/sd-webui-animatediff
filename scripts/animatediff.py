@@ -56,8 +56,7 @@ class AnimateDiffScript(scripts.Script):
         if params.enable:
             logger.info("AnimateDiff process start.")
             params.set_p(p)
-            self._origin_pad_cond_uncond = shared.opts.pad_cond_uncond
-            shared.opts.pad_cond_uncond = True
+            p.override_settings["pad_cond_uncond"] = True
             motion_module.inject(p.sd_model, params.model)
             self.prompt_scheduler = AnimateDiffPromptSchedule()
             self.lora_hacker = AnimateDiffLora(motion_module.mm.is_v2)
@@ -115,7 +114,6 @@ class AnimateDiffScript(scripts.Script):
 
     def _clean(self, p: StableDiffusionProcessing):
         if self.hacked:
-            shared.opts.pad_cond_uncond = self._origin_pad_cond_uncond
             self.cn_hacker.restore()
             self.cfg_hacker.restore()
             self.lora_hacker.restore()
