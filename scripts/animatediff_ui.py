@@ -331,7 +331,7 @@ class AnimateDiffUiGroup:
         infotext_fields.extend((getattr(self.params, field), f"AnimateDiff {field}") for field in fields)
         paste_field_names.extend(f"AnimateDiff {field}" for field in fields)
 
-        return self.register_unit(is_img2img)
+        return self.params.get_list(is_img2img)
 
 
     def register_unit(self, is_img2img: bool):
