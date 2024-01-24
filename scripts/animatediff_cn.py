@@ -14,12 +14,24 @@ from modules.paths import data_path
 from modules.processing import (StableDiffusionProcessing,
                                 StableDiffusionProcessingImg2Img,
                                 StableDiffusionProcessingTxt2Img)
+from modules.system_monitor import monitor_call_context
+
 
 from scripts.animatediff_logger import logger_animatediff as logger
 from scripts.animatediff_ui import AnimateDiffProcess
 from scripts.animatediff_prompt import AnimateDiffPromptSchedule
 from scripts.animatediff_infotext import update_infotext
 from scripts.animatediff_i2ibatch import animatediff_i2ibatch
+
+
+def build_decoded_params_from_processing(p: StableDiffusionProcessing) -> dict:
+    return {
+        "width": p.width,
+        "height": p.height,
+        'steps': p.steps,
+        'batch_size': p.batch_size,
+        'n_iter': p.n_iter,
+    }
 
 
 class AnimateDiffControl:
@@ -139,6 +151,23 @@ class AnimateDiffControl:
 
 
         def hacked_main_entry(self, p: StableDiffusionProcessing):
+            enabled_units_length = len(self.get_enabled_units(p))
+            if enabled_units_length == 0:
+                return _hacked_main_entry(self, p)
+
+            decoded_params = build_decoded_params_from_processing(p)
+            decoded_params["controlnet_units"] = enabled_units_length
+
+            with monitor_call_context(
+                p.get_request(),
+                "extensions.animatediff.controlnet",
+                "extensions.animatediff.controlnet",
+                decoded_params=decoded_params,
+                refund_if_failed=True,
+            ):
+                return _hacked_main_entry(self, p)
+
+        def _hacked_main_entry(self, p: StableDiffusionProcessing):
             from scripts import external_code, global_state, hook
             from scripts.controlnet_lora import bind_control_lora
             from scripts.adapter import Adapter, Adapter_light, StyleAdapter
