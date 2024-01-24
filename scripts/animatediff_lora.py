@@ -39,10 +39,10 @@ class AnimateDiffLora:
             net = network.Network(name, network_on_disk)
             net.mtime = os.path.getmtime(network_on_disk.filename)
 
-            sd = sd_models.read_state_dict(network_on_disk.filename)
+            sd = sd_models.read_state_dict(network_on_disk)
             
             if 'motion_modules' in list(sd.keys())[0]:
-                logger.info(f"Loading motion LoRA {name} from {network_on_disk.filename}")
+                logger.info(f"Loading motion LoRA {name} from {network_on_disk.name}")
                 matched_networks = {}
 
                 for key_network, weight in sd.items():
